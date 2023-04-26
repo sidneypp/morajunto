@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "offers" ADD COLUMN     "ageGroup" INTEGER,
+ADD COLUMN     "toStudy" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "toWork" BOOLEAN NOT NULL DEFAULT true;

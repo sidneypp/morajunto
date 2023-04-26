@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  name     String
+
+  gender      String?
+  phoneNumber String?
+  birthDate   String?
+  document    String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  photo Photo?
+
+  properties Property[]
+  offers     Offer[]
+
+  @@map("users")
+}
+
+model Photo {
+  id       Int    @id @default(autoincrement())
+  key      String
+  url      String
+  filename String
+  size     Int
+  type     String
+  userId   Int    @unique
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("photos")
+}
+
+model State {
+  id          Int     @id @default(autoincrement())
+  name        String
+  acronym     String  @unique
+  isAvailable Boolean @default(false)
+
+  cities    City[]
+  addresses Address[]
+
+  @@map("states")
+}
+
+model City {
+  id             Int    @id @default(autoincrement())
+  name           String
+  normalizedName String
+
+  stateAcronym String
+
+  addresses     Address[]
+  neighborhoods Neighborhood[]
+
+  state State? @relation(fields: [stateAcronym], references: [acronym])
+
+  @@unique([stateAcronym, name, normalizedName], name: "cityIdentifier")
+  @@map("cities")
+}
+
+model Neighborhood {
+  id             Int    @id @default(autoincrement())
+  name           String
+  normalizedName String
+
+  cityId Int
+
+  addresses Address[]
+
+  city City @relation(fields: [cityId], references: [id])
+
+  @@unique([cityId, name, normalizedName], name: "neighborhoodIdentifier")
+  @@map("neighborhoods")
+}
+
+model Address {
+  id             Int     @id @default(autoincrement())
+  zipcode        String
+  stateId        Int
+  cityId         Int
+  neighborhoodId Int
+  street         String
+  number         Int
+  complement     String?
+
+  property Property?
+
+  state        State        @relation(fields: [stateId], references: [id])
+  city         City         @relation(fields: [cityId], references: [id])
+  neighborhood Neighborhood @relation(fields: [neighborhoodId], references: [id])
+
+  @@map("addresses")
+}
+
+model Property {
+  id        Int    @id @default(autoincrement())
+  kind      String
+  area      Int
+  addressId Int    @unique
+  userId    Int
+
+  bedrooms Bedroom[]
+  photos   PropertyPhotos[]
+  features PropertyFeatures?
+  offer    Offer[]
+  rules    PropertyRules?
+
+  address Address @relation(fields: [addressId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("properties")
+}
+
+model PropertyPhotos {
+  id         Int    @id @default(autoincrement())
+  key        String
+  url        String
+  filename   String
+  size       Int
+  type       String
+  propertyId Int
+  houseSection String?
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@map("property_photos")
+}
+
+model PropertyFeatures {
+  id            Int     @id @default(autoincrement())
+  propertyId    Int     @unique
+  isUnfurnished Boolean
+
+  hasParking         Boolean @default(false)
+  hasGym             Boolean @default(false)
+  hasPool            Boolean @default(false)
+  hasAccessibility   Boolean @default(false)
+  hasAirConditioning Boolean @default(false)
+  hasTv              Boolean @default(false)
+  hasCentralHeating  Boolean @default(false)
+  hasElevator        Boolean @default(false)
+  hasOutdoorArea     Boolean @default(false)
+  hasBalcony         Boolean @default(false)
+  hasWifi            Boolean @default(false)
+  hasCleaningService Boolean @default(false)
+  hasEnsuite         Boolean @default(false) 
+  isUnfurnishedBedroom Boolean @default(true)
+
+  property Property @relation(fields: [propertyId], references: [id])
+}
+
+model PropertyRules {
+  id         Int @id @default(autoincrement())
+  propertyId Int @unique
+
+  smokingAllowed  Boolean @default(false)
+  childrenAllowed Boolean @default(false)
+  petsAllowed     Boolean @default(false)
+  alcoholAllowed  Boolean @default(false)
+  guestsAllowed   Boolean @default(false)
+
+  property Property @relation(fields: [propertyId], references: [id])
+}
+
+model Bedroom {
+  id         Int    @id @default(autoincrement())
+  propertyId Int
+  key        String
+
+  photos   BedroomPhotos[]
+  features BedroomFeatures?
+  offer    Offer?
+
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@map("bedrooms")
+}
+
+model BedroomPhotos {
+  id        Int    @id @default(autoincrement())
+  key       String
+  url       String
+  filename  String
+  size      Int
+  type      String
+  bedroomId Int
+
+  bedroom Bedroom @relation(fields: [bedroomId], references: [id])
+
+  @@map("bedroom_photos")
+}
+
+model BedroomFeatures {
+  id            Int     @id @default(autoincrement())
+  beedroomId    Int     @unique
+  isUnfurnished Boolean
+
+  hasBed      Boolean @default(false)
+  hasBalcony  Boolean @default(false)
+  hasChairs   Boolean @default(false)
+  hasDesk     Boolean @default(false)
+  hasEnsuite  Boolean @default(false)
+  hasLock     Boolean @default(false)
+  hasSofa     Boolean @default(false)
+  hasTv       Boolean @default(false)
+  hasWardrobe Boolean @default(false)
+  hasWindow   Boolean @default(false)
+
+  bedroom Bedroom @relation(fields: [beedroomId], references: [id])
+
+  @@map("bedroom_features")
+}
+
+model Offer {
+  id         Int     @id @default(autoincrement())
+  userId     Int
+  propertyId Int
+  bedroomId  Int?    @unique
+  publish    Boolean @default(false)
+
+  rentPricing     String
+  availableAt     DateTime
+  depositRequired Boolean  @default(false)
+  depositAmount   String?
+
+  minimumStay Int?
+  maximumStay Int?
+
+  ageGroup Int?
+
+  toStudy   Boolean @default(true)
+  toWork    Boolean @default(true)
+
+  menAllowed   Boolean @default(true)
+  womenAllowed Boolean @default(true)
+
+  withElectricity Boolean @default(false)
+  withGas         Boolean @default(false)
+  withInternet    Boolean @default(false)
+  withWater       Boolean @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user     User     @relation(fields: [userId], references: [id])
+  property Property @relation(fields: [propertyId], references: [id])
+  bedroom  Bedroom? @relation(fields: [bedroomId], references: [id])
+
+  @@map("offers")
+}
